@@ -1,0 +1,32 @@
+# ML artifacts (IMPORTANT)
+artifacts/
+
+# Logs
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+
+# Build / packaging files
+*.egg-info/
+build/
+dist/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
