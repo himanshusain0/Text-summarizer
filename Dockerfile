@@ -10,16 +10,21 @@ WORKDIR /app
 # Copy project
 COPY . /app
 
-# Install dependencies
+# Upgrade pip (IMPORTANT)
+RUN pip install --upgrade pip
+
+# Install torch separately (stable CPU version)
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install remaining dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Fix transformers issues
+# Fix transformers issues (optional but safe)
 RUN pip install --upgrade accelerate
-RUN pip uninstall -y transformers accelerate
-RUN pip install transformers accelerate
+RUN pip install --upgrade transformers
 
-# Port expose (FastAPI)
+# Expose port
 EXPOSE 8080
 
-# Run app with uvicorn (IMPORTANT change)
+# Run FastAPI app
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]

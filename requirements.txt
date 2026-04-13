@@ -7,7 +7,6 @@ pandas
 nltk
 tqdm
 PyYAML
-torch
 boto3
 python-box==6.0.2
 ensure==1.0.2
