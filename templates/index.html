@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Summarizer</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body {
+    background: #f5f7fb;
+    font-family: Arial;
+}
+
+.hero {
+    text-align: center;
+    margin-top: 80px;
+}
+
+.hero h1 {
+    font-size: 40px;
+    font-weight: bold;
+}
+
+.hero span {
+    color: #16a34a;
+}
+
+.box {
+    margin: 40px auto;
+    width: 60%;
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+textarea {
+    border: none;
+    outline: none;
+    width: 100%;
+    height: 150px;
+    resize: none;
+}
+
+.btn-custom {
+    background: #16a34a;
+    color: white;
+    border-radius: 25px;
+    padding: 10px 30px;
+    display: block;
+    margin: 20px auto; /* center button */
+}
+
+.output-box {
+    margin: 20px auto;
+    width: 60%;
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    display: none;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="hero">
+    <h1>Unlock your <span>AI Power</span></h1>
+    <p>Write, paste and generate summary instantly</p>
+</div>
+
+<!-- INPUT BOX -->
+<div class="box">
+    <form id="form">
+        <textarea id="text" placeholder="Write or paste your text..."></textarea>
+
+        <!-- CENTER BUTTON -->
+        <button type="submit" class="btn btn-custom">✨ Summarize</button>
+    </form>
+
+    <div id="loading" style="display:none; text-align:center;">
+        ⏳ Processing...
+    </div>
+</div>
+
+<!-- OUTPUT BOX (SEPARATE) -->
+<div id="resultBox" class="output-box">
+    <h5>📌 Summary:</h5>
+    <div class="alert alert-success" id="result"></div>
+</div>
+
+<script>
+document.getElementById("form").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const text = document.getElementById("text").value;
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("resultBox").style.display = "none";
+
+    const res = await fetch("/predict", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "text=" + encodeURIComponent(text)
+    });
+
+    const data = await res.text();
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("resultBox").style.display = "block";
+    document.getElementById("result").innerText = data;
+});
+</script>
+
+</body>
+</html>
