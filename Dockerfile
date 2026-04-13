@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.8-slim-buster
+FROM python:3.10-slim
 
 # System packages
 RUN apt-get update -y && apt-get install -y awscli
