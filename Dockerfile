@@ -19,6 +19,8 @@ RUN pip install --upgrade pip
 # Install torch
 RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
+
+RUN pip install -e .
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
