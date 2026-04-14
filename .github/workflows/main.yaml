@@ -57,7 +57,7 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build --no-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
@@ -83,16 +83,16 @@ jobs:
         run: |
           docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      # Stop old container
-      - name: Stop old container
+      # 🔥 STRONG CLEANUP (FIXED)
+      - name: Remove old container completely
         run: |
-          docker stop texts || true
-          docker rm texts || true
+          docker kill texts || true
+          docker rm -f texts || true
 
-      # Run new container
-      - name: Run new container
+      # 🚀 RUN NEW CONTAINER (WITH FIX)
+      - name: Run Docker container
         run: |
-          docker run -d -p 8080:8080 --name texts --restart always \
+          docker run -d -p 8080:8080 --init --name texts --restart always \
           ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Clean unused images
