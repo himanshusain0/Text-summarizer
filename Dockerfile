@@ -27,4 +27,6 @@ RUN pip install --upgrade transformers
 EXPOSE 8080
 
 # Run FastAPI app
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
