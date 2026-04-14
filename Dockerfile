@@ -1,32 +1,36 @@
 # Base image
 FROM python:3.10-slim
 
-# System packages
-RUN apt-get update -y && apt-get install -y awscli
+# System dependencies
+RUN apt-get update -y && apt-get install -y \
+    awscli \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Working directory
+# Set working directory
 WORKDIR /app
 
 # Copy project
 COPY . /app
 
-# 🔥 IMPORTANT FIX
+# Fix PYTHONPATH
 ENV PYTHONPATH="/app/src"
 
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Install torch
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-
-RUN pip install -e .
-# Install dependencies
+# Install dependencies FIRST (faster builds)
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Fix transformers
-RUN pip install --upgrade accelerate
-RUN pip install --upgrade transformers
+# Install torch CPU version
+RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install project
+RUN pip install -e .
+
+# Fix transformers issues
+RUN pip install --upgrade accelerate transformers
 
 # Expose port
 EXPOSE 8080

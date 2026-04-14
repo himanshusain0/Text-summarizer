@@ -24,7 +24,7 @@ jobs:
         run: echo "Linting repository"
 
       - name: Run unit tests
-        run: echo "Running unit tests"
+        run: echo "Running tests"
 
 
   build-and-push-ecr-image:
@@ -51,13 +51,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build & Push Docker Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
-          docker build --no-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
@@ -83,18 +83,16 @@ jobs:
         run: |
           docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      # 🔥 FIXED PART (MOST IMPORTANT)
-      - name: Stop and remove old container
+      # Stop old container
+      - name: Stop old container
         run: |
-          docker rm -f texts || true
+          docker stop texts || true
+          docker rm texts || true
 
-      # 🚀 RUN NEW CONTAINER
-      - name: Run Docker container
+      # Run new container
+      - name: Run new container
         run: |
-          docker run -d -p 8080:8080 --restart always --name texts \
-          -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-          -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-          -e AWS_REGION=${{ secrets.AWS_REGION }} \
+          docker run -d -p 8080:8080 --name texts --restart always \
           ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Clean unused images
