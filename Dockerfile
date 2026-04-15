@@ -19,7 +19,7 @@ ENV PYTHONPATH="/app/src"
 # Upgrade pip
 RUN pip install --upgrade pip
 
-# Install dependencies FIRST (faster builds)
+# Install dependencies ONLY from requirements.txt
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -28,9 +28,6 @@ RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 # Install project
 RUN pip install -e .
-
-# Fix transformers issues
-RUN pip install --upgrade accelerate transformers
 
 # Expose port
 EXPOSE 8080
