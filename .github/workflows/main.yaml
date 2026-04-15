@@ -57,7 +57,10 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
+          echo "Building Docker image..."
           docker build --no-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          
+          echo "Pushing Docker image..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
@@ -81,19 +84,30 @@ jobs:
 
       - name: Pull latest image
         run: |
+          echo "Pulling latest image..."
           docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      # 🔥 STRONG CLEANUP (FIXED)
+      # 🔥 Remove old container
       - name: Remove old container completely
         run: |
-          docker kill texts || true
-          docker rm -f texts || true
+          docker stop texts || true
+          docker rm texts || true
 
-      # 🚀 RUN NEW CONTAINER (WITH FIX)
+      # 🚀 Run new container
       - name: Run Docker container
         run: |
-          docker run -d -p 8080:8080 --init --name texts --restart always \
+          echo "Starting new container..."
+          docker run -d -p 8080:8080 \
+          --name texts \
+          --restart always \
           ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
+      # 🔍 Debug logs (VERY IMPORTANT)
+      - name: Check container logs
+        run: |
+          echo "Checking logs..."
+          docker logs texts
+
+      # 🧹 Cleanup
       - name: Clean unused images
         run: docker system prune -f
