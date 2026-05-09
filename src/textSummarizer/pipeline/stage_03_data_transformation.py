@@ -4,11 +4,18 @@ from textSummarizer.logging import logger
 
 
 class DataTransformationTrainingPipeline:
-    def __init__(self):
-        pass
-
     def main(self):
-        config = ConfigurationManager()
-        data_transformation_config = config.get_data_transformation_config()
-        data_transformation = DataTransformation(config=data_transformation_config)
-        data_transformation.convert()
+        try:
+            logger.info("Stage 03: Data Transformation started")
+
+            config = ConfigurationManager()
+            data_transformation_config = config.get_data_transformation_config()
+
+            data_transformation = DataTransformation(config=data_transformation_config)
+            data_transformation.convert()
+
+            logger.info("Stage 03: Data Transformation completed ✅")
+
+        except Exception as e:
+            logger.exception(e)
+            raise e

@@ -2,28 +2,23 @@ import os
 from textSummarizer.logging import logger
 from textSummarizer.entity import DataValidationConfig
 
-class DataValiadtion:
+class DataValidation:
     def __init__(self, config: DataValidationConfig):
         self.config = config
 
-
-    
-    def validate_all_files_exist(self)-> bool:
+    def validate_all_files_exist(self) -> bool:
         try:
-            validation_status = None
+            data_path = os.path.join("artifacts", "data_ingestion", "samsum_dataset")
+            all_files = os.listdir(data_path)
 
-            all_files = os.listdir(os.path.join("artifacts","data_ingestion","samsum_dataset"))
+            validation_status = all(
+                file in all_files for file in self.config.ALL_REQUIRED_FILES
+            )
 
-            for file in all_files:
-                if file not in self.config.ALL_REQUIRED_FILES:
-                    validation_status = False
-                    with open(self.config.STATUS_FILE, 'w') as f:
-                        f.write(f"Validation status: {validation_status}")
-                else:
-                    validation_status = True
-                    with open(self.config.STATUS_FILE, 'w') as f:
-                        f.write(f"Validation status: {validation_status}")
+            with open(self.config.STATUS_FILE, 'w') as f:
+                f.write(f"Validation status: {validation_status}")
 
+            logger.info(f"Validation status: {validation_status}")
             return validation_status
         
         except Exception as e:

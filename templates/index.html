@@ -3,118 +3,485 @@
 <head>
 <meta charset="UTF-8">
 <title>AI Summarizer</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
-body {
-    background: #f5f7fb;
-    font-family: Arial;
-}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.hero {
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #16161f;
+    --border: rgba(255,255,255,0.07);
+    --green: #00e896;
+    --green-dim: rgba(0,232,150,0.12);
+    --green-glow: rgba(0,232,150,0.25);
+    --text: #f0f0f8;
+    --text-muted: rgba(240,240,248,0.45);
+    --text-dim: rgba(240,240,248,0.25);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(0,232,150,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 0;
+    margin-bottom: 80px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  .nav-tag {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 5px 12px;
+    border-radius: 20px;
+  }
+
+  /* HERO */
+  .hero {
     text-align: center;
-    margin-top: 80px;
-}
+    margin-bottom: 52px;
+    animation: fadeUp 0.7s ease both;
+  }
 
-.hero h1 {
-    font-size: 40px;
-    font-weight: bold;
-}
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
-.hero span {
-    color: #16a34a;
-}
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--green-dim);
+    border: 1px solid rgba(0,232,150,0.2);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+  }
 
-.box {
-    margin: 40px auto;
-    width: 60%;
-    background: white;
+  .hero-badge span { font-size: 16px; }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(36px, 6vw, 58px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    margin-bottom: 18px;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: var(--green);
+    position: relative;
+  }
+
+  h1 em::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0; right: 0;
+    height: 3px;
+    background: var(--green);
+    border-radius: 2px;
+    opacity: 0.4;
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-muted);
+    font-weight: 300;
+    line-height: 1.6;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  /* INPUT CARD */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.7s 0.1s ease both;
+    transition: border-color 0.3s;
+  }
+
+  .input-card:focus-within {
+    border-color: rgba(0,232,150,0.3);
+    box-shadow: 0 0 0 4px rgba(0,232,150,0.06);
+  }
+
+  .input-inner {
+    background: var(--surface2);
     border-radius: 15px;
-    padding: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-}
+    padding: 20px 22px 16px;
+  }
 
-textarea {
+  .input-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    background: transparent;
     border: none;
     outline: none;
-    width: 100%;
-    height: 150px;
     resize: none;
-}
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    line-height: 1.7;
+    caret-color: var(--green);
+  }
 
-.btn-custom {
-    background: #16a34a;
-    color: white;
-    border-radius: 25px;
-    padding: 10px 30px;
-    display: block;
-    margin: 20px auto; /* center button */
-}
+  textarea::placeholder { color: var(--text-dim); }
 
-.output-box {
-    margin: 20px auto;
-    width: 60%;
-    background: white;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  .input-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 4px 4px;
+  }
+
+  .char-count {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  /* SUBMIT BUTTON */
+  .btn-summarize {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green);
+    color: #0a0a0f;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(0,232,150,0.25);
+  }
+
+  .btn-summarize:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,232,150,0.4);
+  }
+
+  .btn-summarize:active { transform: translateY(0); }
+
+  .btn-summarize .icon { font-size: 18px; transition: transform 0.3s; }
+  .btn-summarize:hover .icon { transform: rotate(15deg); }
+
+  /* LOADING */
+  #loading {
     display: none;
-}
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+    animation: fadeUp 0.3s ease both;
+  }
 
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* OUTPUT */
+  #resultBox {
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .result-card {
+    background: var(--surface);
+    border: 1px solid rgba(0,232,150,0.15);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--border);
+    background: var(--green-dim);
+  }
+
+  .result-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: var(--green);
+  }
+
+  .result-dot {
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(0,232,150,0.2);
+    color: var(--green);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { background: var(--green-dim); }
+
+  .result-body {
+    padding: 24px 22px;
+  }
+
+  #result {
+    font-size: 16px;
+    font-weight: 300;
+    line-height: 1.8;
+    color: var(--text);
+  }
+
+  /* FOOTER STATS */
+  .stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .stat-pill {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .stat-pill strong { color: var(--text); font-weight: 500; }
 </style>
 </head>
-
 <body>
 
-<div class="hero">
-    <h1>Unlock your <span>AI Power</span></h1>
-    <p>Write, paste and generate summary instantly</p>
-</div>
+<div class="wrapper">
 
-<!-- INPUT BOX -->
-<div class="box">
-    <form id="form">
-        <textarea id="text" placeholder="Write or paste your text..."></textarea>
-
-        <!-- CENTER BUTTON -->
-        <button type="submit" class="btn btn-custom">✨ Summarize</button>
-    </form>
-
-    <div id="loading" style="display:none; text-align:center;">
-        ⏳ Processing...
+  <nav>
+    <div class="logo">
+      <div class="logo-dot"></div>
+      SummarizeAI
     </div>
-</div>
+    <div class="nav-tag">Beta v1.0</div>
+  </nav>
 
-<!-- OUTPUT BOX (SEPARATE) -->
-<div id="resultBox" class="output-box">
-    <h5>📌 Summary:</h5>
-    <div class="alert alert-success" id="result"></div>
+  <div class="hero">
+    <div class="hero-badge"><span>✦</span> Powered by BART · SAMSum</div>
+    <h1>Summarize anything<br>in <em>seconds</em></h1>
+    <p>Paste any text or dialogue — AI will distill it into a clear, accurate summary instantly.</p>
+  </div>
+
+  <!-- INPUT -->
+  <div class="input-card">
+    <div class="input-inner">
+      <div class="input-label">✦ &nbsp;Your Text</div>
+      <form id="form">
+        <textarea id="text" placeholder="Paste your article, dialogue, notes, or document here..." oninput="updateCount()"></textarea>
+        <div class="input-footer">
+          <span class="char-count" id="charCount">0 characters</span>
+          <button type="submit" class="btn-summarize">
+            <span class="icon">✦</span> Summarize
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="spinner"></div>
+    Analyzing your text...
+  </div>
+
+  <!-- OUTPUT -->
+  <div id="resultBox">
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-header-left">
+          <div class="result-dot"></div>
+          SUMMARY
+        </div>
+        <button class="copy-btn" onclick="copySummary()">Copy</button>
+      </div>
+      <div class="result-body">
+        <div id="result"></div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-pill">📄 Original: <strong id="origWords">—</strong> words</div>
+      <div class="stat-pill">✦ Summary: <strong id="summWords">—</strong> words</div>
+      <div class="stat-pill">📉 Reduced by <strong id="reduction">—</strong></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-document.getElementById("form").addEventListener("submit", async function(e){
+  function updateCount() {
+    const len = document.getElementById("text").value.length;
+    document.getElementById("charCount").textContent = len.toLocaleString() + " characters";
+  }
+
+  function copySummary() {
+    const text = document.getElementById("result").innerText;
+    navigator.clipboard.writeText(text);
+    const btn = document.querySelector(".copy-btn");
+    btn.textContent = "Copied!";
+    setTimeout(() => btn.textContent = "Copy", 2000);
+  }
+
+  document.getElementById("form").addEventListener("submit", async function(e) {
     e.preventDefault();
+    const text = document.getElementById("text").value.trim();
+    if (!text) return;
 
-    const text = document.getElementById("text").value;
+    const origWords = text.split(/\s+/).filter(Boolean).length;
 
-    document.getElementById("loading").style.display = "block";
+    document.getElementById("loading").style.display = "flex";
     document.getElementById("resultBox").style.display = "none";
 
     const res = await fetch("/predict", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: "text=" + encodeURIComponent(text)
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "text=" + encodeURIComponent(text)
     });
 
-    const data = await res.text();
+    const data = await res.json();
 
     document.getElementById("loading").style.display = "none";
     document.getElementById("resultBox").style.display = "block";
-    document.getElementById("result").innerText = data;
-});
+    document.getElementById("result").innerText = data.summary;
+
+    const summWords = data.summary.split(/\s+/).filter(Boolean).length;
+    const pct = Math.round((1 - summWords / origWords) * 100);
+
+    document.getElementById("origWords").textContent = origWords.toLocaleString();
+    document.getElementById("summWords").textContent = summWords.toLocaleString();
+    document.getElementById("reduction").textContent = pct + "%";
+  });
 </script>
 
 </body>

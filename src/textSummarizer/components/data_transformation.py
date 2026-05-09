@@ -12,15 +12,18 @@ class DataTransformation:
 
     def convert_examples_to_features(self, example_batch):
 
-        # ✅ Input tokenization
+        inputs = [
+            "summarize: " + dialogue.replace("\n", " ")
+            for dialogue in example_batch['dialogue']
+        ]
+
         input_encodings = self.tokenizer(
-            example_batch['dialogue'],
+            inputs,
             max_length=1024,
             truncation=True,
             padding="max_length"
         )
 
-        # ✅ Target tokenization (FIXED - new transformers way)
         target_encodings = self.tokenizer(
             text_target=example_batch['summary'],
             max_length=128,
@@ -35,18 +38,14 @@ class DataTransformation:
         }
 
     def convert(self):
-        logger.info("Loading dataset from disk...")
-        dataset_samsum = load_from_disk(self.config.data_path)
+        dataset = load_from_disk(self.config.data_path)
 
-        logger.info("Starting data transformation...")
-        dataset_samsum_pt = dataset_samsum.map(
+        dataset = dataset.map(
             self.convert_examples_to_features,
             batched=True
         )
 
         output_path = os.path.join(self.config.root_dir, "samsum_dataset")
+        dataset.save_to_disk(output_path)
 
-        logger.info(f"Saving transformed dataset at {output_path} ...")
-        dataset_samsum_pt.save_to_disk(output_path)
-
-        logger.info("Data transformation completed successfully ✅")
+        logger.info("Data transformation completed ✅")
