@@ -34,3 +34,6 @@ EXPOSE 8080
 
 # Run FastAPI
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+
+# Model pehle se download kar lo — runtime pe slow nahi hoga
+RUN python -c "from transformers import pipeline; pipeline('summarization', model='philschmid/bart-large-cnn-samsum')"
