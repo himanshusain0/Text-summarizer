@@ -7,33 +7,26 @@ RUN apt-get update -y && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Copy project
 COPY . /app
 
-# Fix PYTHONPATH
 ENV PYTHONPATH="/app/src"
 
-# Upgrade pip
 RUN pip install --upgrade pip
 
-# Install dependencies ONLY from requirements.txt
 COPY requirements.txt .
+
+RUN pip install torch==2.2.2 --index-url https://download.pytorch.org/whl/cpu
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install torch CPU version
-RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
-
-# Install project
 RUN pip install -e .
 
-# Expose port
+ENV HF_HOME="/app/.hf_cache"
+
+RUN python -c "from transformers import pipeline; pipeline('summarization', model='philschmid/bart-large-cnn-samsum')"
+
 EXPOSE 8080
 
-# Run FastAPI
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
-
-# Model pehle se download kar lo — runtime pe slow nahi hoga
-RUN python -c "from transformers import pipeline; pipeline('summarization', model='philschmid/bart-large-cnn-samsum')"
