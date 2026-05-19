@@ -91,7 +91,7 @@ jobs:
       - name: Remove old container completely
         run: |
           docker stop texts || true
-          docker rm texts || true
+          docker rm -f texts || true
 
       # 🚀 Run new container
       - name: Run Docker container
