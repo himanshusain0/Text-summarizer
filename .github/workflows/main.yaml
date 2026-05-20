@@ -92,6 +92,7 @@ jobs:
         run: |
           docker stop texts || true
           docker rm -f texts || true
+          sleep 5
 
       # 🚀 Run new container
       - name: Run Docker container
