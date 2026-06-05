@@ -1,7 +1,7 @@
 from transformers import pipeline
 import torch
 
-MODEL_NAME = "philschmid/bart-large-cnn-samsum"
+MODEL_NAME = "sshleifer/distilbart-cnn-12-6"
 
 class PredictionPipeline:
     def __init__(self):
