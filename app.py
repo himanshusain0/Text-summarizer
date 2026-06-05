@@ -9,9 +9,13 @@ pipeline_obj = None
 @asynccontextmanager
 async def lifespan(app):
     global pipeline_obj
-    print("⏳ Model load ho raha hai...")
-    pipeline_obj = PredictionPipeline()
-    print("✅ Model ready!")
+    try:
+        print("⏳ Model load ho raha hai...")
+        pipeline_obj = PredictionPipeline()
+        print("✅ Model ready!")
+    except Exception as e:
+        print(f"❌ Model failed to load: {e}")
+        pipeline_obj = None
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -27,5 +31,10 @@ def ui(request: Request):
 
 @app.post("/predict")
 def predict(text: str = Form(...)):
+    if pipeline_obj is None:
+        return JSONResponse(
+            status_code=503,
+            content={"summary": "Model is still loading or failed to initialize. Please try again in a moment."}
+        )
     summary = pipeline_obj.predict(text)
     return JSONResponse({"summary": summary})  # ✅ JSON return
