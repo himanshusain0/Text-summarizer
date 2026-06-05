@@ -32,7 +32,7 @@ RUN pip install -e .
 RUN pip install "numpy==1.26.4" --force-reinstall
 
 # Step 6: Model bake in
-RUN python -c "from transformers import pipeline; pipeline('summarization', model='philschmid/bart-large-cnn-samsum')"
+RUN python -c "from transformers import pipeline; pipeline('summarization', model='sshleifer/distilbart-cnn-12-6')"
 
 EXPOSE 8080
 
