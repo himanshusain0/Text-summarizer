@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Allow `python src/textSummarizer/pipeline/stage_03_data_transformation.py`
+sys.path.append(str(Path(__file__).resolve().parents[3]))
+
 from textSummarizer.config.configuration import ConfigurationManager
 from textSummarizer.components.data_transformation import DataTransformation
 from textSummarizer.logging import logger

@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Allow `python src/textSummarizer/pipeline/stage_04_model_trainer.py`
+sys.path.append(str(Path(__file__).resolve().parents[3]))
+
 from textSummarizer.config.configuration import ConfigurationManager
 from textSummarizer.components.model_trainer import ModelTrainer
 from textSummarizer.logging import logger

@@ -1,0 +1,67 @@
+stages:
+  data_ingestion:
+    cmd: python src/textSummarizer/pipeline/stage_01_data_ingestion.py
+    deps:
+      - src/textSummarizer/pipeline/stage_01_data_ingestion.py
+      - src/textSummarizer/components/data_ingestion.py
+      - src/textSummarizer/config/configuration.py
+      - config/config.yaml
+    outs:
+      - artifacts/data_ingestion/data.zip
+      - artifacts/data_ingestion/samsum_dataset
+
+  data_validation:
+    cmd: python src/textSummarizer/pipeline/stage_02_data_validation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_02_data_validation.py
+      - src/textSummarizer/components/data_validation.py
+      - src/textSummarizer/config/configuration.py
+      - config/config.yaml
+      - artifacts/data_ingestion/samsum_dataset
+    outs:
+      - artifacts/data_validation/status.txt
+
+  data_transformation:
+    cmd: python src/textSummarizer/pipeline/stage_03_data_transformation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_03_data_transformation.py
+      - src/textSummarizer/components/data_transformation.py
+      - src/textSummarizer/config/configuration.py
+      - config/config.yaml
+      - artifacts/data_ingestion/samsum_dataset
+    outs:
+      - artifacts/data_transformation/samsum_dataset
+
+  model_trainer:
+    cmd: python src/textSummarizer/pipeline/stage_04_model_trainer.py
+    deps:
+      - src/textSummarizer/pipeline/stage_04_model_trainer.py
+      - src/textSummarizer/components/model_trainer.py
+      - src/textSummarizer/config/configuration.py
+      - config/config.yaml
+      - params.yaml
+      - artifacts/data_transformation/samsum_dataset
+    params:
+      - TrainingArguments.num_train_epochs
+      - TrainingArguments.per_device_train_batch_size
+      - TrainingArguments.weight_decay
+      - TrainingArguments.warmup_steps
+      - TrainingArguments.gradient_accumulation_steps
+    outs:
+      - artifacts/model_trainer
+
+  model_evaluation:
+    cmd: python src/textSummarizer/pipeline/stage_05_model_evaluation.py
+    deps:
+      - src/textSummarizer/pipeline/stage_05_model_evaluation.py
+      - src/textSummarizer/components/model_evaluation.py
+      - src/textSummarizer/config/configuration.py
+      - config/config.yaml
+      - artifacts/data_ingestion/samsum_dataset
+      - artifacts/model_trainer
+    params:
+      - TrainingArguments.num_train_epochs
+      - TrainingArguments.per_device_train_batch_size
+    metrics:
+      - artifacts/model_evaluation/metrics.csv:
+          cache: false

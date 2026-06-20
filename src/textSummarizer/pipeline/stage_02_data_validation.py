@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Allow `python src/textSummarizer/pipeline/stage_02_data_validation.py`
+sys.path.append(str(Path(__file__).resolve().parents[3]))
+
 from textSummarizer.config.configuration import ConfigurationManager
 from textSummarizer.components.data_validation import DataValidation
 from textSummarizer.logging import logger

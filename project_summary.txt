@@ -1,0 +1,268 @@
+================================================================================
+TEXT SUMMARIZER — PROJECT SUMMARY
+================================================================================
+
+1. WHAT THE PROJECT DOES
+------------------------
+An end-to-end NLP Text Summarization web application. The user pastes a long
+article, dialogue, or notes into a browser page, and the app returns a short,
+AI-generated summary. Original word count, summary word count, and percentage
+reduction are displayed in the UI.
+
+The repository contains TWO separate flows:
+  (a) Training pipeline  -> main.py
+  (b) Inference web app  -> app.py  (the one Docker actually runs)
+
+
+2. PROJECT LAYOUT (created by template.py)
+-------------------------------------------
+template.py is a one-shot scaffolding script. It iterates over
+list_of_files and creates any missing file/folder, leaving them empty.
+
+  .github/workflows/.gitkeep
+  src/textSummarizer/__init__.py
+  src/textSummarizer/components/        (one class per ML stage)
+      data_ingestion.py
+      data_validation.py
+      data_transformation.py
+      model_trainer.py
+      model_evaluation.py
+  src/textSummarizer/utils/common.py    (read_yaml, create_directories, get_size)
+  src/textSummarizer/logging/__init__.py
+  src/textSummarizer/config/configuration.py  (ConfigurationManager)
+  src/textSummarizer/pipeline/          (orchestrators)
+      prediction.py                          (used by the web app)
+      stage_01_data_ingestion.py
+      stage_02_data_validation.py
+      stage_03_data_transformation.py
+      stage_04_model_trainer.py
+      stage_05_model_evaluation.py
+  src/textSummarizer/entity/__init__.py (frozen @dataclass configs)
+  src/textSummarizer/constants/__init__.py
+  config/config.yaml                    (paths & URLs)
+  params.yaml                           (training hyperparameters)
+  app.py                                (FastAPI web app)
+  main.py                               (runs the 5 training stages)
+  Dockerfile
+  requirements.txt
+  setup.py                              (installs textSummarizer as a package)
+  research/trials.ipynb                 (notebook experiments)
+  templates/index.html                  (browser UI)
+
+
+3. TOOLS & LIBRARIES (and what they do)
+---------------------------------------
+transformers==4.41.2   Hugging Face: AutoModelForSeq2SeqLM, AutoTokenizer,
+                       pipeline("summarization"), TrainingArguments, Trainer,
+                       DataCollatorForSeq2Seq
+sentencepiece           Tokenizer backend for Pegasus
+accelerate              Speeds up PyTorch training (used by Trainer)
+numpy==1.26.4           Pinned hard. Newer NumPy breaks transformers 4.41;
+                       the Dockerfile force-reinstalls it twice to keep it.
+datasets                HF datasets: load_from_disk, .map(batched=True),
+                       save_to_disk
+evaluate + rouge_score  ROUGE metric for summarization quality
+pandas                  Writes metrics.csv
+nltk                    Text utilities
+tqdm                    Progress bar over the batched test set
+PyYAML                  Reads config.yaml and params.yaml
+boto3                   Present for S3 upload hooks (not used in current flow)
+python-box==6.0.2       ConfigBox: lets you access YAML keys as attributes
+                       (self.config.data_ingestion.root_dir)
+ensure==1.0.2           @ensure_annotations: runtime type checking
+fastapi==0.78.0         Web framework
+uvicorn==0.18.3         ASGI server
+Jinja2==3.1.2           Renders templates/index.html
+python-multipart        Required by FastAPI to parse form data
+protobuf                Tokenizer/model serialization
+torch==2.2.2 (CPU)      Deep learning backend, installed separately in Docker
+
+
+4. SUPPORT FILES
+----------------
+setup.py
+  Defines the textSummarizer package so `from textSummarizer...` works.
+  package_dir={"":"src"}, find_packages(where="src"). Reads README.md for
+  the long description.
+
+params.yaml
+  Training hyperparameters (consumed by ConfigurationManager):
+      num_train_epochs: 1
+      warmup_steps: 500
+      per_device_train_batch_size: 1
+      weight_decay: 0.01
+      logging_steps: 10
+      evaluation_strategy: steps
+      eval_steps: 500
+      save_steps: 1e6
+      gradient_accumulation_steps: 16
+  NOTE: not actually used today — model_trainer.py hard-codes its own values.
+
+config/config.yaml
+  All paths, URLs, and model names. Read by ConfigurationManager via read_yaml
+  and returned as a ConfigBox. Edited when you change dataset URL, model name,
+  or artifacts location.
+
+src/textSummarizer/config/configuration.py
+  ConfigurationManager class with five getters (one per stage). Each:
+    1) pulls the YAML section,
+    2) calls create_directories([...]),
+    3) builds the matching frozen dataclass from entity/__init__.py,
+    4) returns it to the pipeline.
+
+src/textSummarizer/entity/__init__.py
+  Frozen @dataclass definitions: DataIngestionConfig, DataValidationConfig,
+  DataTransformationConfig, ModelTrainerConfig, ModelEvaluationConfig.
+  Frozen so config cannot be mutated mid-run.
+
+src/textSummarizer/utils/common.py
+  Three helpers:
+    read_yaml(path) -> ConfigBox
+    create_directories(paths)
+    get_size(path) -> "~ N KB"
+  All decorated with @ensure_annotations.
+
+src/textSummarizer/constants/__init__.py
+  CONFIG_FILE_PATH = "config/config.yaml"
+  PARAMS_FILE_PATH = "params.yaml"
+  Imported with `from textSummarizer.constants import *`.
+
+src/textSummarizer/logging/__init__.py
+  Standard Python logger used throughout.
+
+templates/index.html
+  Single-page browser UI. CSS-only beige/green design. JS does:
+    updateCount()         - live character counter
+    copySummary()         - copies summary to clipboard
+    form submit handler   - POSTs to /predict via fetch, swaps in a spinner,
+                            shows result + word counts + "Reduced by N%" pill
+
+
+5. TRAINING PIPELINE (main.py)
+------------------------------
+main.py runs five stages sequentially. Each is wrapped in try/except so any
+exception is logged and re-raised to fail fast.
+
+Stage 01 — Data Ingestion
+  - ConfigurationManager builds a DataIngestionConfig from config.yaml.
+  - DataIngestion.download_file() uses urllib.request.urlretrieve to pull
+    the zip from the GitHub URL into artifacts/data_ingestion/data.zip
+    (skips if already present).
+  - DataIngestion.extract_zip_file() unzips with zipfile into
+    artifacts/data_ingestion/samsum_dataset.
+
+Stage 02 — Data Validation
+  - Lists files in artifacts/data_ingestion/samsum_dataset.
+  - Checks that train, test, and validation all exist
+    (ALL_REQUIRED_FILES in YAML).
+  - Writes True/False to artifacts/data_ingestion/status.txt.
+
+Stage 03 — Data Transformation
+  - Loads the raw dataset with load_from_disk.
+  - Uses AutoTokenizer.from_pretrained("google/pegasus-cnn_dailymail").
+  - For each batch: prepends "summarize: " to the dialogue, tokenizes to
+    max_length=1024 (input) and max_length=128 (target), pads/truncates.
+  - Saves tokenized (input_ids, attention_mask, labels) dataset to
+    artifacts/data_transformation/samsum_dataset.
+
+Stage 04 — Model Training
+  - Loads google/pegasus-samsum  (NOTE: hard-coded, different from YAML).
+  - Trainer trains 3 epochs, batch size 2, gradient accumulation 8,
+    warmup 500, weight decay 0.01, evaluate every 500 steps,
+    save every 500 steps, keep 2 checkpoints.
+  - Saves model + tokenizer to
+    artifacts/model_trainer/pegasus-samsum-model/ and .../tokenizer/.
+
+Stage 05 — Model Evaluation
+  - Loads the trained model + tokenizer.
+  - Iterates the test split in batches of 2. For each batch:
+        tokenize -> model.generate(num_beams=8, length_penalty=0.8,
+                                   max_length=128) -> decode -> add to ROUGE
+  - Computes final ROUGE and writes a one-row metrics.csv to
+    artifacts/model_evaluation/metrics.csv.
+
+
+6. WEB APP (app.py)
+-------------------
+Served by:  uvicorn app:app --host 0.0.0.0 --port 8080
+
+Three routes:
+  GET  /         -> redirects to /ui
+  GET  /ui       -> renders templates/index.html
+  POST /predict  -> form field "text", returns JSON { "summary": "..." }
+
+The summarization engine is loaded ONCE at startup via FastAPI's lifespan:
+
+    @asynccontextmanager
+    async def lifespan(app):
+        global pipeline_obj
+        pipeline_obj = PredictionPipeline()
+        yield
+
+src/textSummarizer/pipeline/prediction.py
+  Does NOT use the model that main.py trains. Uses a public DistilBART
+  checkpoint that the Dockerfile pre-downloads:
+
+      MODEL_NAME = "sshleifer/distilbart-cnn-12-6"
+      pipeline("summarization", model=MODEL_NAME, device=0 if cuda else -1)
+
+  Enforced rules:
+    - input must be at least 20 words (otherwise returns a friendly error)
+    - max_length = min(150, max(30, word_count // 2))
+    - min_length = min(30, word_count // 4))
+    - do_sample = False  (deterministic beam search)
+
+The browser posts the text to /predict with fetch, displays the returned
+summary, and shows original/summary word counts and the percentage reduction.
+
+
+7. DOCKERFILE (container image)
+-------------------------------
+1) Base: python:3.10-slim
+2) Installs awscli, build-essential, libgomp1
+   (build tools for HF tokenizers + AWS CLI for future S3 upload)
+3) WORKDIR /app, copies project,
+   ENV PYTHONPATH=/app/src
+   ENV HF_HOME=/app/.hf_cache
+4) Upgrades pip
+5) Installs CPU-only PyTorch 2.2.2 from the PyTorch CPU wheel index
+   (kept separate so the heavy install doesn't shadow the rest)
+6) Installs requirements.txt
+7) Force-reinstalls numpy==1.26.4
+8) pip install -e .            (installs textSummarizer from setup.py)
+9) Force-reinstalls numpy==1.26.4 AGAIN
+   (pip install -e . can pull a newer NumPy that breaks transformers 4.41)
+10) Bakes the model into the image:
+        pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    Weights are downloaded at build time so the running container needs no
+    internet.
+11) EXPOSE 8080
+    CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
+
+
+8. HOW TO RUN
+-------------
+For inference (what the Dockerfile is built for):
+
+    docker build -t summarizer .
+    docker run -p 8080:8080 summarizer
+    # open http://localhost:8080  -> paste text -> click Summarize
+
+For training (runs offline, NOT in the container):
+
+    python main.py
+    # downloads data -> validates -> tokenizes -> fine-tunes Pegasus -> ROUGE
+
+
+9. KNOWN INCONSISTENCIES
+------------------------
+- params.yaml says pegasus-cnn_dailymail and 1 epoch; model_trainer.py
+  hard-codes pegasus-samsum and 3 epochs. params.yaml is not actually used.
+- model_evaluation points to artifacts/data_ingestion/samsum_dataset (the
+  raw dataset), so ROUGE is computed against raw text. Works, but the
+  inline comment "yaha change" indicates a last-minute edit.
+- The web app uses sshleifer/distilbart-cnn-12-6, never the Pegasus model
+  that main.py trains. Training and serving are decoupled.
+- configuration.py has `eval_steps = params.evaluation_strategy` (likely a
+  bug — should be params.eval_steps). No effect today since params are not
+  actually passed to the trainer.

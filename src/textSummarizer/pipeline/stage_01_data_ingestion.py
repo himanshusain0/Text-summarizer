@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+# Allow `python src/textSummarizer/pipeline/stage_01_data_ingestion.py`
+sys.path.append(str(Path(__file__).resolve().parents[3]))
+
 from textSummarizer.config.configuration import ConfigurationManager
 from textSummarizer.components.data_ingestion import DataIngestion
 from textSummarizer.logging import logger
